@@ -79,7 +79,7 @@ func (h *Handler) getInstanceById(id string) (*ec2.Instance, error) {
 		return nil, err
 	}
 
-	if len(instances.Reservations) == 0 || len(instances.Reservations[0].Instances) == 0{
+	if instances == nil || len(instances.Reservations) == 0 || len(instances.Reservations[0].Instances) == 0{
 		return nil, errors.New("no instance found for the given id")
 	}
 

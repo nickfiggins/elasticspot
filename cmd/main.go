@@ -31,7 +31,7 @@ func initSessions() {
 
 func init() {
 	initSessions()
-	elasticIp = os.Getenv("LAMBDA_ELASTIC_IP")
+	elasticIp = os.Getenv("ELASTIC_IP")
 	if len(elasticIp) == 0 {
 		panic("Elastic IP has not been set.")
 	}

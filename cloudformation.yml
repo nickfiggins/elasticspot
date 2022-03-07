@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: changethis
+Parameters:
+  elasticIp:
+    Type: String
+    Description: "Elastic IP to assign to the new Spot instance"
+    Default: ''
+  ecsClusterArn:
+    Type: String
+    Description: "ECS Cluster"
+Resources:
+  ElasticSpotHandlerFunction:
+      Type: AWS::Serverless::Function
+      Properties:
+        CodeUri: ../build/handler.zip
+        Handler: handler
+        Architectures:
+          - x86_64
+        Runtime: go1.x
+        Tracing: Active
+        MemorySize: 128
+        Events:
+          ElasticSpotEvent:
+            Type: CloudWatchEvent
+            Properties:
+              Pattern:
+                source: ["aws.ecs"]
+                detail-type: ["ECS Container Instance State Change"]
+                detail:
+                  clusterArn:
+                    - !Ref ecsClusterArn
+        Environment:
+          Variables:
+            ELASTIC_IP:
+              - !Ref elasticIp

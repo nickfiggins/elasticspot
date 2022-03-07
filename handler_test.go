@@ -2,6 +2,7 @@ package elasticspot_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/nickfiggins/elasticspot"
@@ -12,12 +13,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var elasticIp = "192.0.0.1"
+var testAllocationId = "<test allocation id>"
+var testAssociationId = "<test association id>"
+var testInstanceId = "instance-id"
+
 func TestHandler(t *testing.T) {
 	cases := []struct {
 		scenario string
 		request  *events.CloudWatchEvent
 		ec2 *mockEc2
 		message string
+		err error
 	}{
 		{
 			scenario: "happy path",
@@ -25,36 +32,68 @@ func TestHandler(t *testing.T) {
 			ec2: &mockEc2{
 				describeAddrOutput: &ec2.DescribeAddressesOutput{
 					Addresses: []*ec2.Address{{
-						PublicIp: aws.String("192.168.0.0"),
-						AllocationId: aws.String("<test allocation id>"),
+						PublicIp: aws.String(elasticIp),
+						AllocationId: aws.String(testAllocationId),
 					}},
 				},
 				associateAddrOutput: &ec2.AssociateAddressOutput{
-					AssociationId: aws.String("<test association id>"),
+					AssociationId: aws.String(testAssociationId),
 				},
 				describeInstancesOutput: &ec2.DescribeInstancesOutput{
 					Reservations: []*ec2.Reservation{{
 						Instances: []*ec2.Instance{{
-							InstanceId: aws.String("test instance id"),
+							InstanceId: aws.String(testInstanceId),
 							PublicIpAddress: aws.String("192.0.0.0"),
 						}},
 					},
 					},
 					},
 			},
-			message: "Successfully allocated 192.168.0.0 with instance instance-id. " + 
-			"allocation id: <test allocation id>, association id: <test association id>",
+			message: "Successfully allocated " + elasticIp + " with instance instance-id.\n\t" + 
+			"allocation id: <test allocation id>, association id: <test association id>\n",
+		},
+		{
+			scenario: "elastic ip already assigned to instance",
+			request: &events.CloudWatchEvent{Detail: []byte(`{"ec2InstanceId": "instance-id"}`)},
+			ec2: &mockEc2{
+				describeAddrOutput: &ec2.DescribeAddressesOutput{
+					Addresses: []*ec2.Address{{
+						PublicIp: aws.String(elasticIp),
+						AllocationId: aws.String(testAllocationId),
+					}},
+				},
+				associateAddrOutput: &ec2.AssociateAddressOutput{
+					AssociationId: aws.String(testAssociationId),
+				},
+				describeInstancesOutput: &ec2.DescribeInstancesOutput{
+					Reservations: []*ec2.Reservation{{
+						Instances: []*ec2.Instance{{
+							InstanceId: aws.String(testInstanceId),
+							PublicIpAddress: aws.String(elasticIp),
+						}},
+					},
+					},
+					},
+			},
+			message: "elastic ip already associated with instance id",
+		},
+		{
+			scenario: "no instance found",
+			request: &events.CloudWatchEvent{Detail: []byte(`{"ec2InstanceId": "instance-id"}`)},
+			ec2: &mockEc2{},
+			err: errors.New("no instance found for the given id"),
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.scenario, func(t *testing.T) {
-			h := elasticspot.NewHandler(c.ec2, "192.0.0.1")
+			h := elasticspot.NewHandler(c.ec2, elasticIp)
 			r, err := h.Handle(context.Background(), c.request)
-			assert.NoError(t, err)
-			if c.ec2.err == nil {
+			if c.err != nil {
+				assert.EqualError(t, err, c.err.Error())
+			}
+			if err == nil {
 				assert.NotNil(t, r)
-			} else if r != nil {
 				assert.Equal(t, c.message, r.Message)
 			}
 		})
@@ -64,7 +103,6 @@ func TestHandler(t *testing.T) {
 
 
 type mockEc2 struct {
-	err error
 	describeAddrOutput *ec2.DescribeAddressesOutput
 	associateAddrOutput *ec2.AssociateAddressOutput
 	describeInstancesOutput *ec2.DescribeInstancesOutput
