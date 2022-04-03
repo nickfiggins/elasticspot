@@ -25,7 +25,10 @@ func NewHandler(ec2 EC2API, elasticIp string) *Handler {
 func (h *Handler) Handle(ctx context.Context, event *events.CloudWatchEvent) (*SuccessResponse, error) {
 	var eventDetails EventDetails
 	response := &SuccessResponse{ElasticIP: h.ElasticIP}
-	json.Unmarshal(event.Detail, &eventDetails)
+	if err := json.Unmarshal(event.Detail, &eventDetails); err != nil {
+		log.Printf("Error unmarshaling cloudwatch event %v", err)
+		return nil, err 
+	}
 
 	instance, err := h.getInstanceById(eventDetails.Ec2Instanceid); if err != nil {
 		log.Println("Error fetching instance: ", err)
