@@ -4,12 +4,6 @@ import (
 	"time"
 )
 
-type SuccessResponse struct {
-	InstanceId string
-	ElasticIP string
-	Message string
-}
-
 type EventDetails struct {
 	Agentconnected bool `json:"agentConnected"`
 	Attributes     []struct {

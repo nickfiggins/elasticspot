@@ -1,7 +1,7 @@
 GO=go
 GOCOVER=$(GO) tool cover
 GOTEST=${GO} test
-COVERAGE_DIR=testing
+COVERAGE_DIR=.
 MODULE=github.com/nickfiggins/elasticspot
 .PHONY: test lint coverage
 
