@@ -11,7 +11,7 @@ import (
 	"github.com/nickfiggins/elasticspot"
 )
 
-var handler *elasticspot.V1Handler
+var handler *elasticspot.Handler
 
 func init() {
 	cfg := &aws.Config{Region: aws.String(os.Getenv("AWS_REGION"))}
