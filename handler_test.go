@@ -2,6 +2,7 @@ package elasticspot_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/nickfiggins/elasticspot"
@@ -47,8 +48,11 @@ func TestHandler(t *testing.T) {
 					},
 				},
 			},
-			message: "Successfully allocated " + elasticIp + " with instance instance-id.\n\t" +
-				"allocation id: <test allocation id>, association id: <test association id>\n",
+			message: fmt.Sprintf(
+				`Successfully allocated %s with instance %s. Allocation ID: %s Association ID: %s`,
+				"192.0.0.1", "instance-id", "<test allocation id>", "<test association id>"),
+			//"Successfully allocated " + elasticIp + " with instance instance-id.\n\t" +
+			//	"allocation id: <test allocation id>, association id: <test association id>\n",
 		},
 		{
 			scenario: "elastic ip already assigned to instance",
